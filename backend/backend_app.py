@@ -8,8 +8,10 @@ POSTS = [
     {"id": 1, "title": "First post", "content": "This is the first post."},
     {"id": 2, "title": "Second post", "content": "This is the second post."},
     {"id": 3, "title": "Third post", "content": "This is the third post."},
-    {"id": 4, "title": "Fourth post", "content": "This is the fourth post."},
+    {"id": 4, "title": "Fourth post", "content": "This is the Hello post."},
     {"id": 5, "title": "Fifth post", "content": "This is the fifth post."},
+    {"id": 6, "title": "Fifth post", "content": "This is the Hello post."},
+
 ]
 
 
@@ -113,6 +115,37 @@ def update_post(post_id):
     post_to_update.update(new_post_data)
 
     return jsonify(post_to_update), 200
+
+
+@app.route('/api/posts/search', methods=['GET'])
+def search_post():
+    title = request.args.get('title')
+    content = request.args.get('content')
+
+    search_results = []
+
+    for post in POSTS:
+        if title and content:
+            if (title.lower() in post["title"].lower()
+                    and content.lower() in post["content"].lower()
+                    and post not in search_results):
+
+                search_results.append(post)
+
+        if title and not content:
+            if title.lower() in post["title"].lower() and post not in search_results:
+                search_results.append(post)
+
+        if content and not title:
+            if content.lower() in post["content"].lower() and post not in search_results:
+                search_results.append(post)
+
+    if search_results:
+        return jsonify(search_results), 200
+    else:
+        # Returns an empty list
+        return jsonify(search_results), 200
+        # return jsonify({"Message": "No posts were found for the title or content search parameters."}), 200
 
 
 if __name__ == '__main__':
