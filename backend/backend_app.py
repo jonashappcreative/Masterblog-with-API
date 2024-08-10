@@ -7,6 +7,9 @@ CORS(app)  # This will enable CORS for all routes
 POSTS = [
     {"id": 1, "title": "First post", "content": "This is the first post."},
     {"id": 2, "title": "Second post", "content": "This is the second post."},
+    {"id": 3, "title": "Third post", "content": "This is the third post."},
+    {"id": 4, "title": "Fourth post", "content": "This is the fourth post."},
+    {"id": 5, "title": "Fifth post", "content": "This is the fifth post."},
 ]
 
 
@@ -92,6 +95,24 @@ def delete_post(post_id):
     # Return the deleted book
     return jsonify({"message": f"Post with id {post_id} with title '{post_to_delete["title"]}' "
                                f"has been deleted successfully."})
+
+
+@app.route('/api/posts/<int:post_id>', methods=['PUT'])
+def update_post(post_id):
+    post_to_update = find_post_by_id(post_id)
+
+    # If the book wasn't found, return a 404 error
+    if post_to_update is None:
+        return jsonify({"error": "Post not found. Maybe it was deleted or you inserted a non existing id?"}), 404
+
+    new_post_data = request.get_json()
+    is_valid, error_message = validate_post_data(new_post_data)
+    if not new_post_data or not is_valid:
+        return jsonify({"error": "Invalid book data. 'title', 'author' or both are required."}), 400
+
+    post_to_update.update(new_post_data)
+
+    return jsonify(post_to_update), 200
 
 
 if __name__ == '__main__':
