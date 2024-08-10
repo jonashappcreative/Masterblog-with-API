@@ -43,7 +43,6 @@ def find_post_by_id(post_id):
 
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
-
     sort_field = request.args.get('sort')
     direction = request.args.get('direction')
 
@@ -154,7 +153,6 @@ def search_post():
             if (title.lower() in post["title"].lower()
                     and content.lower() in post["content"].lower()
                     and post not in search_results):
-
                 search_results.append(post)
 
         if title and not content:
@@ -175,3 +173,13 @@ def search_post():
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5002, debug=True)
+
+
+"""
+Options to learn later:
+
+Implement Pagination: If your blog gets a lot of posts, you might want to add pagination to return a certain number 
+of posts at a time. Expand Data Model: Consider expanding your data model to include more complex features like 
+comments, categories or tags. User Authorization: Add user registration and login endpoints, allowing only 
+authenticated users to create, update, and delete posts. Rate Limiting and Versioning: Protect your API from abuse by 
+adding rate limiting. Plan for the future by implementing versioning now."""
