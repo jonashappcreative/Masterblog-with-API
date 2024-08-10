@@ -27,6 +27,15 @@ def validate_post_data(data):
     return "nothing_is_missing", "good"
 
 
+def find_post_by_id(post_id):
+    for post in POSTS:
+        if post["id"] == post_id:
+            return post
+
+    # If post_id is not Found in POSTS
+    return None
+
+
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
     return jsonify(POSTS)
@@ -67,6 +76,22 @@ def add_post():
         # Return the new book data to the client
         # 201 is status code for a created object
         return jsonify(new_post), 201
+
+
+@app.route('/api/posts/<int:post_id>', methods=['DELETE'])
+def delete_post(post_id):
+    post_to_delete = find_post_by_id(post_id)
+
+    # If the book wasn't found, return a 404 error
+    if post_to_delete is None:
+        return jsonify({"error": "Post not found. It was already deleted or never existed."}), 404
+
+    # Remove the book from the list
+    POSTS.remove(post_to_delete)
+
+    # Return the deleted book
+    return jsonify({"message": f"Post with id {post_id} with title '{post_to_delete["title"]}' "
+                               f"has been deleted successfully."})
 
 
 if __name__ == '__main__':
