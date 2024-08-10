@@ -5,12 +5,12 @@ app = Flask(__name__)
 CORS(app)  # This will enable CORS for all routes
 
 POSTS = [
-    {"id": 1, "title": "First post", "content": "This is the first post."},
-    {"id": 2, "title": "Second post", "content": "This is the second post."},
-    {"id": 3, "title": "Third post", "content": "This is the third post."},
-    {"id": 4, "title": "Fourth post", "content": "This is the Hello post."},
-    {"id": 5, "title": "Fifth post", "content": "This is the fifth post."},
-    {"id": 6, "title": "Fifth post", "content": "This is the Hello post."},
+    {"id": 1, "title": "A First post", "content": "F This is the first post."},
+    {"id": 2, "title": "C Second post", "content": "B This is the second post."},
+    {"id": 3, "title": "E Third post", "content": "C This is the third post."},
+    {"id": 4, "title": "B Fourth post", "content": "E This is the Hello post."},
+    {"id": 5, "title": "D Fifth post", "content": "D This is the fifth post."},
+    {"id": 6, "title": "F Fifth post", "content": "A This is the Hello post."},
 
 ]
 
@@ -43,7 +43,32 @@ def find_post_by_id(post_id):
 
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
-    return jsonify(POSTS)
+
+    sort_field = request.args.get('sort')
+    direction = request.args.get('direction')
+
+    # Check for invalid input parameters
+    if sort_field != "title" and sort_field != "content" and sort_field != "":
+        return jsonify({"error": "Bad Request: Invalid Parameter for Sorting!"
+                                 "Must be <'title'> or <'content'> or <''>."}), 400
+
+    # verify a valid direction parameter. Could tolerate wrong ones, but this is cleaner
+    if direction != "asc" and direction != "desc" and direction != "":
+        return jsonify({"error": "Bad Request: Invalid Parameter for Direction"
+                                 "Must be <'asc'> or <'desc'> or <''>."}), 400
+
+    # copy to avoid unwanted change of original list
+    posts_to_sort = POSTS.copy()
+
+    # Ensure sort_field is either 'title' or 'content', and direction is either 'asc' or 'desc'
+    if sort_field in ['title', 'content']:
+        # Reverse True means sorting descending/reversed order
+        reverse = True if direction == 'desc' else False
+        sorted_posts = sorted(posts_to_sort, key=lambda x: x[sort_field], reverse=reverse)
+    else:
+        sorted_posts = POSTS  # Return posts in original order if no sorting params are provided
+
+    return jsonify(sorted_posts)
 
 
 @app.route('/api/posts', methods=['POST'])
