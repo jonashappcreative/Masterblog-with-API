@@ -46,26 +46,28 @@ def get_posts():
     sort_field = request.args.get('sort')
     direction = request.args.get('direction')
 
+    # Check if sorting is even necessary, if not return POSTS unsorted
+    if sort_field is None:
+        return jsonify(POSTS)
+
     # Check for invalid input parameters
     if sort_field != "title" and sort_field != "content" and sort_field != "":
-        return jsonify({"error": "Bad Request: Invalid Parameter for Sorting!"
+        return jsonify({"error": "Bad Request: Invalid Parameter for Sorting! "
                                  "Must be <'title'> or <'content'> or <''>."}), 400
 
     # verify a valid direction parameter. Could tolerate wrong ones, but this is cleaner
-    if direction != "asc" and direction != "desc" and direction != "":
-        return jsonify({"error": "Bad Request: Invalid Parameter for Direction"
+    if direction != "asc" and direction != "desc" and direction is not None:
+        return jsonify({"error": "Bad Request: Invalid Parameter for Direction! "
                                  "Must be <'asc'> or <'desc'> or <''>."}), 400
 
     # copy to avoid unwanted change of original list
-    posts_to_sort = POSTS.copy()
+    sorted_posts = POSTS.copy()
 
     # Ensure sort_field is either 'title' or 'content', and direction is either 'asc' or 'desc'
     if sort_field in ['title', 'content']:
         # Reverse True means sorting descending/reversed order
         reverse = True if direction == 'desc' else False
-        sorted_posts = sorted(posts_to_sort, key=lambda x: x[sort_field], reverse=reverse)
-    else:
-        sorted_posts = POSTS  # Return posts in original order if no sorting params are provided
+        sorted_posts = sorted(sorted_posts, key=lambda x: x[sort_field], reverse=reverse)
 
     return jsonify(sorted_posts)
 
@@ -119,8 +121,12 @@ def delete_post(post_id):
     POSTS.remove(post_to_delete)
 
     # Return the deleted book
-    return jsonify({"message": f"Post with id {post_id} with title '{post_to_delete["title"]}' "
-                               f"has been deleted successfully."})
+    return jsonify(
+        {"message":
+         f"Post with id {post_id} with "
+         f"title {post_to_delete['title']} "
+         f"has been deleted successfully."
+         })
 
 
 @app.route('/api/posts/<int:post_id>', methods=['PUT'])
