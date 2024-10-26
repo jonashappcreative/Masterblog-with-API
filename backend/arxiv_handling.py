@@ -29,22 +29,23 @@ def fetch_arxiv_articles(category='cs.HC', start=0, max_results=5, sort_by='subm
     # Define the API endpoint
     url = "http://export.arxiv.org/api/query"
     
-    # Build the search query
+        # Build the search query
     search_query = f'cat:{category}'
-
-    # Add the parameter to check for new articles
+    
+    # This seems to be not possible by API
+    # https://stackoverflow.com/questions/64047299/how-to-query-arxiv-for-a-specific-year
     if published_after:
         search_query += f"+AND+submittedDate:[{published_after}+TO+*]"
     if published_before:
         search_query += f"+AND+submittedDate:[*+TO+{published_before}]"
 
-    # Set up the query parameters as variables
+    # Update params to use the search_query directly
     params = {
-        'search_query': f'cat:{category}',  # Search for articles in the specified category
-        'start': start,  # Starting index for results
-        'max_results': max_results,  # Number of results to return
-        'sortBy': sort_by,  # Sorting criteria (e.g., submission date)
-        'sortOrder': sort_order,  # Sorting order (e.g., descending)
+        'search_query': search_query,  # Use the combined query with date filters
+        'start': start,
+        'max_results': max_results,
+        'sortBy': sort_by,
+        'sortOrder': sort_order,
     }
     
     # Make the request to the ArXiv API
@@ -72,9 +73,11 @@ def clean_arxiv_response(response_dict):
     """
 
     articles_list = []
+    #print(type(response_dict))
+    #print(response_dict)
     entries = response_dict["feed"]["entry"]
     
-    print(f"Number of New Articles: {len(entries)}")
+    print(f"Number of found articles: {len(entries)}")
 
     # Handle single or multiple articles in the 'entry' field
     if not isinstance(entries, list):
@@ -151,14 +154,19 @@ def insert_articles(articles_list):
         articles_list (list): A list of dictionaries, each containing article data.
     """
 
+    articles_added_counter = 0
 
     for article in articles_list:
 
         if article_exists(article['arxiv_id']):
-            print(f"Article {article['title']} exists aready!")
+            # print(f"Article {article['title']} exists aready!")
             continue
         else:
             insert_to_database(article)
+            print(f"Article {article['title']} added successfully!")
+            articles_added_counter += 1
+
+    return articles_added_counter
 
 
 def article_exists(arxiv_id):
@@ -191,11 +199,12 @@ def refresh_database():
 
     # Perform a SQL Query to find the most recent article 
 
-    # api_response = fetch_arxiv_articles(published_after=most_recent_article_date)
-
-    api_response = fetch_arxiv_articles(published_after="202410", published_before="20241022")
+    api_response = fetch_arxiv_articles(max_results=50)
     articles_list = clean_arxiv_response(api_response)
-    insert_articles(articles_list)
+    articles_added_counter = insert_articles(articles_list)
+
+    print(f"Added {articles_added_counter} new articles!")
+    
 
 
 def find_most_recent_db_entry():
@@ -224,19 +233,21 @@ def find_most_recent_db_entry():
     cursor.close()
     conn.close()
 
-    datetime = most_recent_article[5]
-    most_recent_date = datetime[0:4] + datetime[5:7] + datetime[8:10]
+    try: 
+        most_recent_article_time = most_recent_article[5]
+    except TypeError:
+        return 0
 
-    return most_recent_date
+    return most_recent_article_time
 
 
 if __name__ == "__main__":
     load_dotenv()
     
-    refresh_database()
+    # refresh_database()
 
-    ''' WORKING CODE
-    api_response = fetch_arxiv_articles()
+    #WORKING CODE FOR INITIAL FILL
+    api_response = fetch_arxiv_articles(max_results=100)
     articles_list = clean_arxiv_response(api_response)
     insert_articles(articles_list)
-    '''
+    #'''
