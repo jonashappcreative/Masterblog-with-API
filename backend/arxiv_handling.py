@@ -9,7 +9,7 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 
-def fetch_arxiv_articles(category='cs.HC', start=0, max_results=20, sort_by='submittedDate', sort_order='descending'):
+def fetch_arxiv_articles(category='cs.HC', start=0, max_results=20, sort_by='submittedDate', sort_order='descending', published_after=None, published_before=None):
     """
     Fetches a list of articles from the ARXIV API based on specified category and other parameters.
 
@@ -19,6 +19,8 @@ def fetch_arxiv_articles(category='cs.HC', start=0, max_results=20, sort_by='sub
         max_results (int): Maximum number of results to return (default: 20).
         sort_by (str): Field to sort results by, e.g., 'submittedDate' (default: 'submittedDate').
         sort_order (str): Sorting order, 'ascending' or 'descending' (default: 'descending').
+        published_after (str): Optional date filter for articles published after this date, format 'YYYYMMDD'.
+        published_before (str): Optional date filter for articles published before this date, format 'YYYYMMDD'.
 
     Returns:
         dict: Parsed XML response in dictionary format if successful, or an error message string otherwise.
@@ -27,7 +29,14 @@ def fetch_arxiv_articles(category='cs.HC', start=0, max_results=20, sort_by='sub
     # Define the API endpoint
     url = "http://export.arxiv.org/api/query"
     
-    # PARAM UPLOAD DATE TO REFRESH DATABASE STILL NECESSARY!
+    # Build the search query
+    search_query = f'cat:{category}'
+
+    # Add the parameter to check for new articles
+    if published_after:
+        search_query += f"+AND+submittedDate:[{published_after}+TO+*]"
+    if published_before:
+        search_query += f"+AND+submittedDate:[*+TO+{published_before}]"
 
     # Set up the query parameters as variables
     params = {
@@ -35,7 +44,7 @@ def fetch_arxiv_articles(category='cs.HC', start=0, max_results=20, sort_by='sub
         'start': start,  # Starting index for results
         'max_results': max_results,  # Number of results to return
         'sortBy': sort_by,  # Sorting criteria (e.g., submission date)
-        'sortOrder': sort_order  # Sorting order (e.g., descending)
+        'sortOrder': sort_order,  # Sorting order (e.g., descending)
     }
     
     # Make the request to the ArXiv API
@@ -142,8 +151,6 @@ def insert_articles(articles_list):
         articles_list (list): A list of dictionaries, each containing article data.
     """
 
-    print("DEBUG")
-    print()
 
     for article in articles_list:
 
@@ -177,8 +184,57 @@ def article_exists(arxiv_id):
     return exists
 
 
+def refresh_database():
+    
+    most_recent_article_date = find_most_recent_db_entry()
+    print(f"\nThe most recent article was published on: {most_recent_article_date}\n")
+
+    # Perform a SQL Query to find the most recent article 
+
+    api_response = fetch_arxiv_articles(published_after=most_recent_article_date)
+    articles_list = clean_arxiv_response(api_response)
+    insert_articles(articles_list)
+
+
+def find_most_recent_db_entry():
+    """
+    Fetches the most recent published article from the 'articles' table.
+    Does not handle the error when table is empty at the beginning.
+
+    Parameters:
+        db_path (str): Path to the SQLite database file.
+
+    Returns:
+        The most recent articles date in the format "YYYYMMDD"
+    """
+    conn = sqlite3.connect("hci_database.sqlite3")
+    cursor = conn.cursor()
+    
+    query = """
+    SELECT * FROM articles
+    ORDER BY published DESC
+    LIMIT 1
+    """
+    
+    cursor.execute(query)
+    most_recent_article = cursor.fetchone()
+    
+    cursor.close()
+    conn.close()
+
+    datetime = most_recent_article[5]
+    most_recent_date = datetime[0:4] + datetime[5:7] + datetime[8:10]
+
+    return most_recent_date
+
+
 if __name__ == "__main__":
     load_dotenv()
+    
+    refresh_database()
+
+    ''' WORKING CODE
     api_response = fetch_arxiv_articles()
     articles_list = clean_arxiv_response(api_response)
     insert_articles(articles_list)
+    '''
