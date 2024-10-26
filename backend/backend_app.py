@@ -1,5 +1,14 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Access variables
+secret_key = os.getenv('SECRET_KEY')
+database_url = os.getenv('DATABASE_URL')
 
 app = Flask(__name__)
 CORS(app)  # This will enable CORS for all routes
@@ -179,13 +188,3 @@ def search_post():
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5002, debug=True)
-
-
-"""
-Options to learn later:
-
-Implement Pagination: If your blog gets a lot of posts, you might want to add pagination to return a certain number 
-of posts at a time. Expand Data Model: Consider expanding your data model to include more complex features like 
-comments, categories or tags. User Authorization: Add user registration and login endpoints, allowing only 
-authenticated users to create, update, and delete posts. Rate Limiting and Versioning: Protect your API from abuse by 
-adding rate limiting. Plan for the future by implementing versioning now."""
