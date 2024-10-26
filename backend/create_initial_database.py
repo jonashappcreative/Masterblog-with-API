@@ -22,20 +22,20 @@ class User(Base):
 class Article(Base):
     __tablename__ = 'articles'
     
-    article_id = Column(Integer, primary_key=True, autoincrement=True)
+    article_id = Column(Integer, primary_key=True, autoincrement=True) # Primary Key, independed from arxiv id
     arxiv_id = Column(String, unique=True, nullable=False)
     title = Column(Text, nullable=False)
     abstract = Column(Text)
-    summary = Column(Text)
+    ai_summary = Column(Text)
     published = Column(TIMESTAMP)
     updated = Column(TIMESTAMP)
-    doi = Column(String)
+    # doi = Column(String)
     pdf_link = Column(String)
     html_link = Column(String)
     primary_category = Column(String)
-    total_results = Column(Integer)
-    search_query = Column(Text)
-    favorites = Column(Integer)
+    # total_results = Column(Integer)
+    # search_query = Column(Text)
+    # favorites = Column(Integer) # Favorite of the user
 
 # Create the SQLite database
 DATABASE_URI = 'sqlite:///hci_database.sqlite3'
@@ -44,4 +44,4 @@ engine = create_engine(DATABASE_URI)
 # Create all tables
 Base.metadata.create_all(engine)
 
-print("Database 'hci_database.sqlite3' created successfully with all tables.")
+print("\nDatabase 'hci_database.sqlite3' created successfully with all tables.\n")
