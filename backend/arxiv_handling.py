@@ -9,7 +9,7 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 
-def fetch_arxiv_articles(category='cs.HC', start=0, max_results=5, sort_by='submittedDate', sort_order='descending', published_after=None, published_before=None):
+def fetch_arxiv_articles(category='cs.HC', start=0, max_results=20, sort_by='submittedDate', sort_order='descending', published_after=None, published_before=None):
     """
     Fetches a list of articles from the ARXIV API based on specified category and other parameters.
 
@@ -160,7 +160,12 @@ def insert_articles(articles_list):
 
         if article_exists(article['arxiv_id']):
             # print(f"Article {article['title']} exists aready!")
+
+            # Instead of continue this could likely be a return since as soon as one exist, all following ones
+            # will likely also exist, since they are chronologically fetched
+
             continue
+
         else:
             insert_to_database(article)
             print(f"Article {article['title']} added successfully!")
@@ -193,19 +198,13 @@ def article_exists(arxiv_id):
 
 
 def refresh_database():
-    
-    most_recent_article_date = find_most_recent_db_entry()
-    print(f"\nThe most recent article was published on: {most_recent_article_date}\n")
-
-    # Perform a SQL Query to find the most recent article 
-
-    api_response = fetch_arxiv_articles(max_results=50)
-    articles_list = clean_arxiv_response(api_response)
-    articles_added_counter = insert_articles(articles_list)
-
-    print(f"Added {articles_added_counter} new articles!")
+    '''
+    Was meant to search for new articles on ARXIV by most recent ate, but the Arxiv API does not allow such filtering.
+    The workaround is to just search for the most recent articles and try to add all. Search for more articles than have likely been added to Arxiv since last refresh.
+    '''
     
 
+    
 
 def find_most_recent_db_entry():
     """
@@ -244,10 +243,13 @@ def find_most_recent_db_entry():
 if __name__ == "__main__":
     load_dotenv()
     
-    # refresh_database()
+    most_recent_article_date = find_most_recent_db_entry()
+    print(f"\nThe most recent article was published on: {most_recent_article_date}\n")
 
-    #WORKING CODE FOR INITIAL FILL
-    api_response = fetch_arxiv_articles(max_results=100)
+    # Perform a SQL Query to find the most recent article 
+
+    api_response = fetch_arxiv_articles(max_results=50)
     articles_list = clean_arxiv_response(api_response)
-    insert_articles(articles_list)
-    #'''
+    articles_added_counter = insert_articles(articles_list)
+
+    print(f"Added {articles_added_counter} new articles!")
