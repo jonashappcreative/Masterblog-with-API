@@ -9,7 +9,7 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 
-def fetch_arxiv_articles(category='cs.HC', start=0, max_results=20, sort_by='submittedDate', sort_order='descending', published_after=None, published_before=None):
+def fetch_arxiv_articles(category='cs.HC', start=0, max_results=5, sort_by='submittedDate', sort_order='descending', published_after=None, published_before=None):
     """
     Fetches a list of articles from the ARXIV API based on specified category and other parameters.
 
@@ -191,7 +191,9 @@ def refresh_database():
 
     # Perform a SQL Query to find the most recent article 
 
-    api_response = fetch_arxiv_articles(published_after=most_recent_article_date)
+    # api_response = fetch_arxiv_articles(published_after=most_recent_article_date)
+
+    api_response = fetch_arxiv_articles(published_after="202410", published_before="20241022")
     articles_list = clean_arxiv_response(api_response)
     insert_articles(articles_list)
 
