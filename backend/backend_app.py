@@ -49,6 +49,10 @@ def find_post_by_id(post_id):
     # If post_id is not Found in POSTS
     return None
 
+@app.route('/', methods=['GET'])
+def index_html():
+    text = "This is a home page without functions.\n"
+    return text
 
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
