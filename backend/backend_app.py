@@ -51,8 +51,49 @@ def find_post_by_id(post_id):
 
 @app.route('/', methods=['GET'])
 def index_html():
-    text = "This is a home page without functions.\n"
+    text = "This is a home page without functions.\n Please go to /login to login"
     return text
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        if not request.is_json:
+            return jsonify({'error': 'Content-Type must be application/json'}), 400
+
+        data = request.get_json()
+
+        username = data.get('username')
+        password = data.get('password')
+
+        if not username or not password:
+            return jsonify({'error': 'Username and password are required.'}), 400
+
+        '''
+        # user = User.query.filter_by(username=username).first()
+
+        # if not user or not check_password_hash(user.password, password):
+        #     return jsonify({'error': 'Invalid username or password.'}), 401
+
+        # access_token = create_access_token(identity=user.id)
+
+        user_data = {
+            'id': user.id,
+            'username': user.username
+        }
+        '''
+
+        test_user = "admin"
+        test_user_password = "admin"
+
+        if username != test_user or password != test_user_password:
+            return jsonify({'error': 'Invalid username or password.'}), 401
+
+
+        return jsonify({'message': 'You have logged in as user {username}'}), 200
+    
+        # return jsonify({'token': access_token, 'user': user_data})
+    
+    return jsonify({'message': 'This is the Login page, please use method POST withg username and password'}), 200
 
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
