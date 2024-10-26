@@ -1,7 +1,29 @@
+import os
 import requests
+import sqlite3
 import xmltodict
 
-def fetch_arxiv_articles(category='cs.HC', start=0, max_results=1000, sort_by='submittedDate', sort_order='descending'):
+from dotenv import load_dotenv
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+
+def fetch_arxiv_articles(category='cs.HC', start=0, max_results=20, sort_by='submittedDate', sort_order='descending'):
+    """
+    Fetches a list of articles from the ARXIV API based on specified category and other parameters.
+
+    Parameters:
+        category (str): The ARXIV category to filter articles by (default: 'cs.HC' for Human-Computer Interaction).
+        start (int): The starting index for results (default: 0).
+        max_results (int): Maximum number of results to return (default: 20).
+        sort_by (str): Field to sort results by, e.g., 'submittedDate' (default: 'submittedDate').
+        sort_order (str): Sorting order, 'ascending' or 'descending' (default: 'descending').
+
+    Returns:
+        dict: Parsed XML response in dictionary format if successful, or an error message string otherwise.
+    """
+    
     # Define the API endpoint
     url = "http://export.arxiv.org/api/query"
     
@@ -26,9 +48,22 @@ def fetch_arxiv_articles(category='cs.HC', start=0, max_results=1000, sort_by='s
     else:
         return f"Error: {response.status_code}"
 
-def parse_arxiv_response(articles_dict):
-    articles = []
-    entries = articles_dict["feed"]["entry"]
+
+def clean_arxiv_response(response_dict):
+    """
+    Parses the ARXIV API response dictionary and extracts relevant article information.
+    Might get deleted later if everything is handled through the Databse.
+
+    Parameters:
+        response_dict (dict): Dictionary of articles from ARXIV API response.
+
+    Returns:
+        articles_list: A list of dictionaries, each containing article details such as ID, title, abstract, 
+              published date, updated date, primary category, and links to PDF and HTML versions.
+    """
+
+    articles_list = []
+    entries = response_dict["feed"]["entry"]
     
     print(f"Number of New Articles: {len(entries)}")
 
@@ -48,41 +83,102 @@ def parse_arxiv_response(articles_dict):
             
             # here, cleaning is necessary. The primary cat is not always cs.HC!
             "primary_category": entry.get("arxiv:primary_category", {}).get("@term"),
-            "total_results": None,
-            "search_query": None,
-            "doi": None,  # Some entries may contain DOI, you'll need to check for its existence
+
             "favorites": False  # Default value
         }
-        articles.append(article_data)
+        articles_list.append(article_data)
     
-    return articles
-
-# Fetch articles in Human-Computer Interaction category
-hci_articles = fetch_arxiv_articles()
-simplified_articles = parse_arxiv_response(hci_articles)
-
-count_HC = 0
-list_of_titles = []
+    return articles_list
 
 
+def insert_to_database(article):
+    """
+    Inserts a single article into the 'articles' table.
 
-# Check Articles and API Output
-for article in simplified_articles:
-    pass
-    #print(article["arxiv_id"]) # (equals html link)
-    #print(article["title"])
-    #print(article["pdf_link"])
+    Parameters:
+        db_path (str): Path to the SQLite database file.
+        article_data (dict): Dictionary containing article information with keys:
+                             'arxiv_id', 'title', 'abstract', 'published', 'updated',
+                             'pdf_link', 'html_link', 'primary_category', and 'favorites'.
 
-    if article["primary_category"] == "cs.HC":
+    """
+    # Connect to the SQLite database
+    conn = sqlite3.connect("hci_database.sqlite3")
+    cursor = conn.cursor()
 
-        if article["title"] not in list_of_titles:
-            list_of_titles.append(article["title"])
+    # SQL statement to insert article data
+    insert_query = """
+    INSERT INTO articles (arxiv_id, title, abstract, published, updated, pdf_link, html_link, primary_category, favorites)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """
+    
+    # Prepare data for insertion
+    article_values = (
+        article['arxiv_id'],
+        article['title'],
+        article['abstract'],
+        article['published'],
+        article['updated'],
+        article['pdf_link'],
+        article['html_link'],
+        article['primary_category'],
+        False  # Default to False if 'favorites' key is not present
+    )
+
+    # Execute the insertion and commit
+    cursor.execute(insert_query, article_values)
+    conn.commit()
+
+    # Close the connection
+    cursor.close()
+    conn.close()
+
+
+def insert_articles(articles_list):
+    """
+    Inserts multiple articles into the 'articles' table.
+    Checks each article, if it already exists in the Database.
+    Parameters:
+        articles_list (list): A list of dictionaries, each containing article data.
+    """
+
+    print("DEBUG")
+    print()
+
+    for article in articles_list:
+
+        if article_exists(article['arxiv_id']):
+            print(f"Article {article['title']} exists aready!")
+            continue
         else:
-            print("Duplicate Alert!")
-        
-        count_HC += 1
+            insert_to_database(article)
 
-    #print()
 
-print(f"Number of Individual Titles: {len(list_of_titles)}")
-print(f"Count of Checked Articles: {count_HC}")
+def article_exists(arxiv_id):
+    """
+    Checks if an article with a given arxiv_id already exists in the database.
+
+    Parameters:
+        db_path (str): Path to the SQLite database file.
+        arxiv_id (str): The arxiv_id of the article to check.
+
+    Returns:
+        bool: True if the article exists, False otherwise.
+    """
+    conn = sqlite3.connect("hci_database.sqlite3")
+    cursor = conn.cursor()
+
+    query = "SELECT 1 FROM articles WHERE arxiv_id = ?"
+    cursor.execute(query, (arxiv_id,))
+    exists = cursor.fetchone() is not None
+
+    cursor.close()
+    conn.close()
+    return exists
+
+
+if __name__ == "__main__":
+    load_dotenv()
+    api_response = fetch_arxiv_articles()
+    articles_list = clean_arxiv_response(api_response)
+    insert_articles(articles_list)

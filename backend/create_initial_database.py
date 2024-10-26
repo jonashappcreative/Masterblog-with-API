@@ -35,7 +35,7 @@ class Article(Base):
     primary_category = Column(String)
     # total_results = Column(Integer)
     # search_query = Column(Text)
-    # favorites = Column(Integer) # Favorite of the user
+    favorites = Column(Integer) # Favorite of the user
 
 # Create the SQLite database
 DATABASE_URI = 'sqlite:///hci_database.sqlite3'
