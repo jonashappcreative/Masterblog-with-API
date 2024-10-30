@@ -2,6 +2,10 @@ import os
 import requests
 import sqlite3
 import xmltodict
+from sqlalchemy import create_engine, text
+
+from flask import jsonify
+import json
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -202,9 +206,9 @@ def refresh_database():
     Was meant to search for new articles on ARXIV by most recent ate, but the Arxiv API does not allow such filtering.
     The workaround is to just search for the most recent articles and try to add all. Search for more articles than have likely been added to Arxiv since last refresh.
     '''
-    
+    # Got deleted!
+    pass
 
-    
 
 def find_most_recent_db_entry():
     """
@@ -240,9 +244,43 @@ def find_most_recent_db_entry():
     return most_recent_article_time
 
 
+def get_all_articles_from_database():
+    """
+    Gets all articles from the 'articles' table as a JSON document.
+    """
+    # Set up the SQLite engine
+    engine = create_engine('sqlite:///hci_database.sqlite3')
+
+    with engine.connect() as connection:
+        # Execute the query
+        results = connection.execute(text('SELECT * FROM articles LIMIT 5'))
+        
+        # Get column names
+        columns = results.keys()
+        
+        # Convert each row to a dictionary
+        rows = [dict(zip(columns, row)) for row in results.fetchall()]
+
+        print(type(rows))
+        print(type(rows[0]))
+        print()
+        print((rows))
+        print((rows[0]))
+    
+    # Return as JSON
+    # return jsonify(rows)
+
+    
+
 if __name__ == "__main__":
     load_dotenv()
     
+    # Test Code:
+    json_output = get_all_articles_from_database()
+
+
+    
+    '''    
     most_recent_article_date = find_most_recent_db_entry()
     print(f"\nThe most recent article was published on: {most_recent_article_date}\n")
 
@@ -252,4 +290,4 @@ if __name__ == "__main__":
     articles_list = clean_arxiv_response(api_response)
     articles_added_counter = insert_articles(articles_list)
 
-    print(f"Added {articles_added_counter} new articles!")
+    print(f"Added {articles_added_counter} new articles!")'''

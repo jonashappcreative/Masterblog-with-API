@@ -1,7 +1,9 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, json
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
+
+from arxiv_handling import get_all_articles_from_database 
 
 # Load environment variables from .env file
 load_dotenv()
@@ -94,6 +96,7 @@ def login():
         # return jsonify({'token': access_token, 'user': user_data})
     
     return jsonify({'message': 'This is the Login page, please use method POST withg username and password'}), 200
+
 
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
@@ -229,6 +232,52 @@ def search_post():
         # Returns an empty list
         return jsonify(search_results), 200
         # return jsonify({"Message": "No posts were found for the title or content search parameters."}), 200
+
+
+@app.route('/api/articles', methods=['GET'])
+def get_articles():
+    
+    articles_list = get_all_articles_from_database()
+    print("DEBUG HERE")
+    print(type(articles_list))
+    json_output = jsonify(articles_list)
+
+    print()
+    print(type(json_output))
+    print(json_output)
+    
+
+    return "Test String", 200  # Only jsonify here
+
+
+    return "Hello Test String", 200
+
+    '''sort_field = request.args.get('sort')
+    direction = request.args.get('direction')
+
+    # Check if sorting is even necessary, if not return POSTS unsorted
+    if sort_field is None:
+        return jsonify(POSTS)
+
+    # Check for invalid input parameters
+    if sort_field != "title" and sort_field != "content" and sort_field != "":
+        return jsonify({"error": "Bad Request: Invalid Parameter for Sorting! "
+                                 "Must be <'title'> or <'content'> or <''>."}), 400
+
+    # verify a valid direction parameter. Could tolerate wrong ones, but this is cleaner
+    if direction != "asc" and direction != "desc" and direction is not None:
+        return jsonify({"error": "Bad Request: Invalid Parameter for Direction! "
+                                 "Must be <'asc'> or <'desc'> or <''>."}), 400
+
+    # copy to avoid unwanted change of original list
+    sorted_posts = POSTS.copy()
+
+    # Ensure sort_field is either 'title' or 'content', and direction is either 'asc' or 'desc'
+    if sort_field in ['title', 'content']:
+        # Reverse True means sorting descending/reversed order
+        reverse = True if direction == 'desc' else False
+        sorted_posts = sorted(sorted_posts, key=lambda x: x[sort_field], reverse=reverse)
+    '''
 
 
 if __name__ == '__main__':
