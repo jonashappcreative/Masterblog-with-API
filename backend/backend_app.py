@@ -238,17 +238,22 @@ def search_post():
 def get_articles():
     
     articles_list = get_all_articles_from_database()
-    print("DEBUG HERE")
-    print(type(articles_list))
-    json_output = jsonify(articles_list)
+
+    new_dict = {}
+    for article in articles_list:
+        article_id = article['article_id']
+        new_dict[article_id] = article
+        print(article)
+        print()
+
+    json_output = json.dumps(new_dict)
+    print(type(json_output))
 
     print()
-    print(type(json_output))
-    print(json_output)
-    
 
-    return "Test String", 200  # Only jsonify here
 
+
+    return json_output, 200  # Only jsonify here
 
     return "Hello Test String", 200
 

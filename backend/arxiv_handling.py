@@ -260,15 +260,9 @@ def get_all_articles_from_database():
         
         # Convert each row to a dictionary
         rows = [dict(zip(columns, row)) for row in results.fetchall()]
-
-        print(type(rows))
-        print(type(rows[0]))
-        print()
-        print((rows))
-        print((rows[0]))
     
-    # Return as JSON
-    # return jsonify(rows)
+    # Return as LIST
+    return rows
 
     
 
@@ -277,7 +271,6 @@ if __name__ == "__main__":
     
     # Test Code:
     json_output = get_all_articles_from_database()
-
 
     
     '''    
