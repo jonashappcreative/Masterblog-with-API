@@ -2,8 +2,10 @@ from flask import Flask, jsonify, request, json
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
+from sqlalchemy import create_engine, text
 
-from arxiv_handling import get_all_articles_from_database 
+
+from arxiv_handling import get_all_articles_from_database, find_single_article_by_id
 
 # Load environment variables from .env file
 load_dotenv()
@@ -237,53 +239,26 @@ def search_post():
 @app.route('/api/articles', methods=['GET'])
 def get_articles():
     
+    articles_dict = {}
     articles_list = get_all_articles_from_database()
 
-    new_dict = {}
+    # Ensure each article is stored as a dict with it's article_id as key
     for article in articles_list:
         article_id = article['article_id']
-        new_dict[article_id] = article
-        print(article)
-        print()
-
-    json_output = json.dumps(new_dict)
-    print(type(json_output))
-
-    print()
+        articles_dict[article_id] = article
+    
+    return jsonify(articles_dict), 200
 
 
+@app.route('/api/articles/<int:article_id>', methods=['GET'])
+def get_single_article(article_id):
+    article_to_get = find_single_article_by_id(article_id)
 
-    return json_output, 200  # Only jsonify here
+    # If the book wasn't found, return a 404 error
+    if article_to_get is None:
+        return jsonify({"error": "Post not found. Maybe it was deleted or you inserted a non existing id?"}), 404
 
-    return "Hello Test String", 200
-
-    '''sort_field = request.args.get('sort')
-    direction = request.args.get('direction')
-
-    # Check if sorting is even necessary, if not return POSTS unsorted
-    if sort_field is None:
-        return jsonify(POSTS)
-
-    # Check for invalid input parameters
-    if sort_field != "title" and sort_field != "content" and sort_field != "":
-        return jsonify({"error": "Bad Request: Invalid Parameter for Sorting! "
-                                 "Must be <'title'> or <'content'> or <''>."}), 400
-
-    # verify a valid direction parameter. Could tolerate wrong ones, but this is cleaner
-    if direction != "asc" and direction != "desc" and direction is not None:
-        return jsonify({"error": "Bad Request: Invalid Parameter for Direction! "
-                                 "Must be <'asc'> or <'desc'> or <''>."}), 400
-
-    # copy to avoid unwanted change of original list
-    sorted_posts = POSTS.copy()
-
-    # Ensure sort_field is either 'title' or 'content', and direction is either 'asc' or 'desc'
-    if sort_field in ['title', 'content']:
-        # Reverse True means sorting descending/reversed order
-        reverse = True if direction == 'desc' else False
-        sorted_posts = sorted(sorted_posts, key=lambda x: x[sort_field], reverse=reverse)
-    '''
-
+    return jsonify(article_to_get), 200
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5002, debug=True)

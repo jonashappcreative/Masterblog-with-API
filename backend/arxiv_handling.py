@@ -210,9 +210,9 @@ def refresh_database():
     pass
 
 
-def find_most_recent_db_entry():
+def find_single_article_by_id(article_id):
     """
-    Fetches the most recent published article from the 'articles' table.
+    Fetches one single article from the 'articles' table with a given article ID.
     Does not handle the error when table is empty at the beginning.
 
     Parameters:
@@ -221,48 +221,47 @@ def find_most_recent_db_entry():
     Returns:
         The most recent articles date in the format "YYYYMMDD"
     """
-    conn = sqlite3.connect("hci_database.sqlite3")
-    cursor = conn.cursor()
-    
-    query = """
-    SELECT * FROM articles
-    ORDER BY published DESC
-    LIMIT 1
-    """
-    
-    cursor.execute(query)
-    most_recent_article = cursor.fetchone()
-    
-    cursor.close()
-    conn.close()
 
-    try: 
-        most_recent_article_time = most_recent_article[5]
-    except TypeError:
-        return 0
+    # Set up the SQLite engine
+    engine = create_engine('sqlite:///hci_database.sqlite3')
 
-    return most_recent_article_time
+    with engine.connect() as connection:
+        # Execute the query
+        result = connection.execute(text(f'SELECT * FROM articles WHERE article_id = {article_id}'))
+        
+        # Get column names
+        columns = result.keys()
+        
+        # Convert each row to a dictionary
+        articles_list = [dict(zip(columns, row)) for row in result.fetchall()]
+    
+    # Return as LIST
+    if articles_list != []:
+        return articles_list
+    
+    return None
+
 
 
 def get_all_articles_from_database():
     """
-    Gets all articles from the 'articles' table as a JSON document.
+    Gets all articles from the 'articles' table as a list.
     """
     # Set up the SQLite engine
     engine = create_engine('sqlite:///hci_database.sqlite3')
 
     with engine.connect() as connection:
         # Execute the query
-        results = connection.execute(text('SELECT * FROM articles LIMIT 5'))
+        results = connection.execute(text('SELECT * FROM articles'))
         
         # Get column names
         columns = results.keys()
         
         # Convert each row to a dictionary
-        rows = [dict(zip(columns, row)) for row in results.fetchall()]
+        articles_list = [dict(zip(columns, row)) for row in results.fetchall()]
     
     # Return as LIST
-    return rows
+    return articles_list
 
     
 
